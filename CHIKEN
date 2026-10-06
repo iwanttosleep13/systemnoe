@@ -1,0 +1,47 @@
+public class ChickenOrEgg {
+
+    // Кто сказал последнее слово: "Курица" или "Яйцо"
+    static volatile String lastSpeaker = null;
+
+    // Общий флаг: чей сейчас ход (true = Курица, false = Яйцо)
+    static volatile boolean chickenTurn = true;
+
+    // Сколько всего высказываний
+    static final int ROUNDS = 10;
+
+    public static void main(String[] args) throws InterruptedException {
+
+        Thread chicken = new Thread(() -> {
+            for (int i = 0; i < ROUNDS; i++) {
+                // ждём своей очереди
+                while (!chickenTurn) Thread.onSpinWait();
+                System.out.println("Курица");
+                lastSpeaker = "Курица";
+                chickenTurn = false; // передаём ход Яйцу
+            }
+        }, "Курица");
+
+        Thread egg = new Thread(() -> {
+            for (int i = 0; i < ROUNDS; i++) {
+                while (chickenTurn) Thread.onSpinWait();
+                System.out.println("Яйцо");
+                lastSpeaker = "Яйцо";
+                chickenTurn = true; // передаём ход Курице
+            }
+        }, "Яйцо");
+
+        chicken.start();
+        egg.start();
+
+        // Демонстрация isAlive(): пока потоки живы — ждём
+        while (chicken.isAlive() || egg.isAlive()) {
+            Thread.sleep(50);
+        }
+
+        // join() — на всякий случай дождёмся завершения обоих
+        chicken.join();
+        egg.join();
+
+        System.out.println("Спор окончен. Победила " + lastSpeaker);
+    }
+}
